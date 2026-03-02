@@ -6,69 +6,73 @@
     <title>SwiftType Pro</title>
     <style>
         :root { --bg: #1a1a1a; --main: #00d4ff; --text: #e0e0e0; --sub: #666; --error: #ff4b2b; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .header-ui { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
-        .stat { color: var(--main); font-weight: bold; }
-        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; }
-        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; min-height: 120px; cursor: text; }
-        .word { display: inline-block; margin-right: 12px; color: var(--sub); }
+        .stats-box { display: flex; gap: 20px; font-weight: bold; font-size: 1.1rem; }
+        .stat { color: var(--main); }
+        select { background: #333; color: white; border: 1px solid var(--main); padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; min-height: 120px; user-select: none; }
+        .word { display: inline-block; margin-right: 12px; color: var(--sub); transition: 0.2s; }
+        .letter { position: relative; }
         .letter.correct { color: #fff; }
         .letter.incorrect { color: var(--error); border-bottom: 2px solid var(--error); }
         .letter.current { border-left: 2px solid var(--main); animation: blink 0.8s infinite; }
         @keyframes blink { 50% { border-color: transparent; } }
         input { position: absolute; opacity: 0; pointer-events: none; }
-        #results-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 100; }
-        .result-score { font-size: 4rem; color: var(--main); margin: 0; font-weight: 800; }
-        .restart-btn { background: var(--main); border: none; color: #000; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
-        .restart-btn:hover { transform: scale(1.05); }
+        .restart-btn { background: var(--main); border: none; color: #000; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .restart-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="results-overlay">
-        <h2 style="margin-bottom: 5px;">Test Complete!</h2>
-        <p class="result-score"><span id="final-wpm">0</span></p>
-        <p style="color:var(--main); margin-top:-10px; margin-bottom: 10px; font-weight:bold;">WORDS PER MINUTE</p>
-        <p style="color:var(--sub); margin-bottom: 25px;">Mistakes: <span id="final-errors" style="color:var(--error)">0</span></p>
-        <button class="restart-btn" onclick="resetTest()">Try Again</button>
-    </div>
-
+<div class="container" onclick="focusInput()">
     <div class="header-ui">
-        <div style="display: flex; gap: 20px;">
+        <div class="stats-box">
             <div>WPM: <span id="wpm" class="stat">0</span></div>
+            <div>Errors: <span id="errors" class="stat" style="color: #ff4b2b;">0</span></div>
             <div>Time: <span id="timer" class="stat">30</span>s</div>
         </div>
-        <select id="durationSelect" onfocus="isSelecting = true" onblur="isSelecting = false">
-            <option value="15">15s</option>
-            <option value="30" selected>30s</option>
-            <option value="60">60s</option>
-        </select>
+        <div>
+            <label style="font-size: 0.8rem; margin-right: 5px;">TEST DURATION:</label>
+            <select id="durationSelect" onchange="resetTest()">
+                <option value="15">15s</option>
+                <option value="30" selected>30s</option>
+                <option value="60">60s</option>
+            </select>
+        </div>
     </div>
 
-    <div id="words-container" onclick="focusInput()"></div>
-    
+    <div id="words-container"></div>
     <input type="text" id="typing-input" autofocus autocomplete="off">
-    <button class="restart-btn" onclick="resetTest()" style="background:#333; color:var(--text);">Restart</button>
+    
+    <button class="restart-btn" onclick="resetTest()">Restart Test</button>
 </div>
 
 <script>
-    const textPool = "coding is a superpower that allows you to build anything you can imagine from simple websites to complex artificial intelligence systems the world is full of data waiting to be processed stay focused and keep your fingers moving across the home row of your keyboard";
-    let wordsArray = [], currentWordIndex = 0, currentLetterIndex = 0, timer, maxTime, interval = null, isStarted = false, correctLetters = 0, totalErrors = 0;
-    
-    // The "isSelecting" flag prevents focus-stealing
-    let isSelecting = false;
+    const textPool = "technology is evolving faster than ever before learning to code opens up a world of possibilities for creators the atmosphere of the planet is a delicate balance of gases typing speed is a combination of muscle memory and focus challenge yourself to be better every single day stay curious and keep building";
+    let wordsArray = [];
+    let currentWordIndex = 0;
+    let currentLetterIndex = 0;
+    let timer;
+    let maxTime;
+    let interval = null;
+    let isStarted = false;
+    let correctLetters = 0;
+    let totalErrors = 0;
 
-    const container = document.getElementById('words-container'), input = document.getElementById('typing-input'), timerDisplay = document.getElementById('timer'), wpmDisplay = document.getElementById('wpm'), durationSelect = document.getElementById('durationSelect'), overlay = document.getElementById('results-overlay');
+    const container = document.getElementById('words-container');
+    const input = document.getElementById('typing-input');
+    const timerDisplay = document.getElementById('timer');
+    const wpmDisplay = document.getElementById('wpm');
+    const errorDisplay = document.getElementById('errors');
+    const durationSelect = document.getElementById('durationSelect');
 
     function initGame() {
         wordsArray = textPool.split(' ').sort(() => Math.random() - 0.5);
         maxTime = parseInt(durationSelect.value);
         timer = maxTime;
         timerDisplay.innerText = timer;
-        overlay.style.display = 'none';
-        input.disabled = false;
         renderWords();
     }
 
@@ -89,15 +93,32 @@
 
     input.addEventListener('input', (e) => {
         if (!isStarted) startTimer();
-        const val = input.value, currentWord = wordsArray[currentWordIndex], targetChar = currentWord[currentLetterIndex], lastChar = val[val.length - 1];
+        
+        const val = input.value;
+        const currentWord = wordsArray[currentWordIndex];
+        const targetChar = currentWord[currentLetterIndex];
+        const lastInputChar = val[val.length - 1];
 
+        // Handle word completion via space
         if (val.endsWith(' ')) {
-            if (currentLetterIndex > 0) { currentWordIndex++; currentLetterIndex = 0; input.value = ''; }
+            if (currentLetterIndex > 0) {
+                currentWordIndex++;
+                currentLetterIndex = 0;
+                input.value = '';
+            } else {
+                input.value = ''; // prevent space at start
+            }
         } else {
             const letterEl = document.getElementById(`word-${currentWordIndex}-ltr-${currentLetterIndex}`);
             if (letterEl) {
-                if (lastChar === targetChar) { letterEl.classList.add('correct'); correctLetters++; }
-                else { letterEl.classList.add('incorrect'); totalErrors++; }
+                if (lastInputChar === targetChar) {
+                    letterEl.classList.add('correct');
+                    correctLetters++;
+                } else {
+                    letterEl.classList.add('incorrect');
+                    totalErrors++;
+                    errorDisplay.innerText = totalErrors;
+                }
                 currentLetterIndex++;
             }
         }
@@ -109,48 +130,41 @@
         interval = setInterval(() => {
             timer--;
             timerDisplay.innerText = timer;
-            const elapsed = (maxTime - timer) / 60;
-            wpmDisplay.innerText = Math.round((correctLetters / 5) / elapsed) || 0;
+            calculateWPM();
             if (timer <= 0) endGame();
         }, 1000);
+    }
+
+    function calculateWPM() {
+        const timeElapsed = (maxTime - timer) / 60;
+        const wpm = Math.round((correctLetters / 5) / timeElapsed) || 0;
+        wpmDisplay.innerText = wpm;
     }
 
     function endGame() {
         clearInterval(interval);
         input.disabled = true;
-        document.getElementById('final-wpm').innerText = wpmDisplay.innerText;
-        document.getElementById('final-errors').innerText = totalErrors;
-        overlay.style.display = 'flex';
+        alert(`Finished! Speed: ${wpmDisplay.innerText} WPM | Errors: ${totalErrors}`);
     }
 
     function resetTest() {
         clearInterval(interval);
-        isStarted = false; currentWordIndex = 0; currentLetterIndex = 0; correctLetters = 0; totalErrors = 0;
-        input.value = ''; wpmDisplay.innerText = "0";
+        isStarted = false;
+        currentWordIndex = 0;
+        currentLetterIndex = 0;
+        correctLetters = 0;
+        totalErrors = 0;
+        input.value = '';
+        input.disabled = false;
+        errorDisplay.innerText = "0";
+        wpmDisplay.innerText = "0";
         initGame();
-        // Only focus if we aren't currently clicking the dropdown
-        if(!isSelecting) setTimeout(() => input.focus(), 50);
+        input.focus();
     }
 
-    function focusInput() { 
-        if(overlay.style.display !== 'flex' && !isSelecting) {
-            input.focus(); 
-        }
-    }
-
-    durationSelect.addEventListener('change', () => {
-        isSelecting = false; // Dropdown is done
-        resetTest();
-    });
-    
-    // Also, if the user clicks anywhere on the body, try to focus (unless they are selecting)
-    document.body.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'SELECT') {
-            focusInput();
-        }
-    });
-
+    function focusInput() { input.focus(); }
     initGame();
 </script>
+
 </body>
 </html>
