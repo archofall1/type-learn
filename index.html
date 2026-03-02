@@ -10,7 +10,7 @@
         .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .header-ui { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
         .stat { color: var(--main); font-weight: bold; }
-        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; position: relative; z-index: 20; }
+        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; }
         #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; min-height: 120px; cursor: text; }
         .word { display: inline-block; margin-right: 12px; color: var(--sub); }
         .letter.correct { color: #fff; }
@@ -40,7 +40,7 @@
             <div>WPM: <span id="wpm" class="stat">0</span></div>
             <div>Time: <span id="timer" class="stat">30</span>s</div>
         </div>
-        <select id="durationSelect">
+        <select id="durationSelect" onfocus="isSelecting = true" onblur="isSelecting = false">
             <option value="15">15s</option>
             <option value="30" selected>30s</option>
             <option value="60">60s</option>
@@ -56,6 +56,9 @@
 <script>
     const textPool = "coding is a superpower that allows you to build anything you can imagine from simple websites to complex artificial intelligence systems the world is full of data waiting to be processed stay focused and keep your fingers moving across the home row of your keyboard";
     let wordsArray = [], currentWordIndex = 0, currentLetterIndex = 0, timer, maxTime, interval = null, isStarted = false, correctLetters = 0, totalErrors = 0;
+    
+    // The "isSelecting" flag prevents focus-stealing
+    let isSelecting = false;
 
     const container = document.getElementById('words-container'), input = document.getElementById('typing-input'), timerDisplay = document.getElementById('timer'), wpmDisplay = document.getElementById('wpm'), durationSelect = document.getElementById('durationSelect'), overlay = document.getElementById('results-overlay');
 
@@ -125,19 +128,28 @@
         isStarted = false; currentWordIndex = 0; currentLetterIndex = 0; correctLetters = 0; totalErrors = 0;
         input.value = ''; wpmDisplay.innerText = "0";
         initGame();
-        setTimeout(() => input.focus(), 50);
+        // Only focus if we aren't currently clicking the dropdown
+        if(!isSelecting) setTimeout(() => input.focus(), 50);
     }
 
-    // New focus logic: Only focuses if the result overlay isn't open
     function focusInput() { 
-        if(overlay.style.display !== 'flex') {
+        if(overlay.style.display !== 'flex' && !isSelecting) {
             input.focus(); 
         }
     }
 
-    // Change duration listener
-    durationSelect.addEventListener('change', resetTest);
+    durationSelect.addEventListener('change', () => {
+        isSelecting = false; // Dropdown is done
+        resetTest();
+    });
     
+    // Also, if the user clicks anywhere on the body, try to focus (unless they are selecting)
+    document.body.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'SELECT') {
+            focusInput();
+        }
+    });
+
     initGame();
 </script>
 </body>
