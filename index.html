@@ -10,29 +10,28 @@
         .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .header-ui { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
         .stat { color: var(--main); font-weight: bold; }
-        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; }
-        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; min-height: 120px; }
+        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; position: relative; z-index: 20; }
+        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; min-height: 120px; cursor: text; }
         .word { display: inline-block; margin-right: 12px; color: var(--sub); }
         .letter.correct { color: #fff; }
         .letter.incorrect { color: var(--error); border-bottom: 2px solid var(--error); }
         .letter.current { border-left: 2px solid var(--main); animation: blink 0.8s infinite; }
         @keyframes blink { 50% { border-color: transparent; } }
         input { position: absolute; opacity: 0; pointer-events: none; }
-        #results-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 10; }
+        #results-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 100; }
         .result-score { font-size: 4rem; color: var(--main); margin: 0; font-weight: 800; }
-        .result-sub { font-size: 1.2rem; color: var(--sub); margin-bottom: 25px; }
         .restart-btn { background: var(--main); border: none; color: #000; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
-        .restart-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .restart-btn:hover { transform: scale(1.05); }
     </style>
 </head>
-<body onclick="focusInput(event)">
+<body>
 
 <div class="container">
     <div id="results-overlay">
         <h2 style="margin-bottom: 5px;">Test Complete!</h2>
         <p class="result-score"><span id="final-wpm">0</span></p>
         <p style="color:var(--main); margin-top:-10px; margin-bottom: 10px; font-weight:bold;">WORDS PER MINUTE</p>
-        <p class="result-sub">Mistakes: <span id="final-errors" style="color:var(--error)">0</span></p>
+        <p style="color:var(--sub); margin-bottom: 25px;">Mistakes: <span id="final-errors" style="color:var(--error)">0</span></p>
         <button class="restart-btn" onclick="resetTest()">Try Again</button>
     </div>
 
@@ -41,14 +40,15 @@
             <div>WPM: <span id="wpm" class="stat">0</span></div>
             <div>Time: <span id="timer" class="stat">30</span>s</div>
         </div>
-        <select id="durationSelect" onchange="resetTest()" onclick="event.stopPropagation()">
+        <select id="durationSelect">
             <option value="15">15s</option>
             <option value="30" selected>30s</option>
             <option value="60">60s</option>
         </select>
     </div>
 
-    <div id="words-container"></div>
+    <div id="words-container" onclick="focusInput()"></div>
+    
     <input type="text" id="typing-input" autofocus autocomplete="off">
     <button class="restart-btn" onclick="resetTest()" style="background:#333; color:var(--text);">Restart</button>
 </div>
@@ -128,11 +128,15 @@
         setTimeout(() => input.focus(), 50);
     }
 
-    // Fixed focus function to ignore dropdown clicks
-    function focusInput(e) { 
-        if(e && e.target.tagName === 'SELECT') return;
-        if(overlay.style.display !== 'flex') input.focus(); 
+    // New focus logic: Only focuses if the result overlay isn't open
+    function focusInput() { 
+        if(overlay.style.display !== 'flex') {
+            input.focus(); 
+        }
     }
+
+    // Change duration listener
+    durationSelect.addEventListener('change', resetTest);
     
     initGame();
 </script>
