@@ -7,44 +7,32 @@
     <style>
         :root { --bg: #1a1a1a; --main: #00d4ff; --text: #e0e0e0; --sub: #666; --error: #ff4b2b; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        
-        .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; position: relative; }
-        
-        /* Stats & UI */
+        .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .header-ui { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
         .stat { color: var(--main); font-weight: bold; }
-        select { background: #333; color: white; border: 1px solid var(--main); padding: 5px; border-radius: 5px; }
-
-        /* Typing Area */
-        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; }
+        select { background: #333; color: white; border: 1px solid var(--main); padding: 8px; border-radius: 5px; cursor: pointer; outline: none; }
+        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; user-select: none; min-height: 120px; }
         .word { display: inline-block; margin-right: 12px; color: var(--sub); }
         .letter.correct { color: #fff; }
         .letter.incorrect { color: var(--error); border-bottom: 2px solid var(--error); }
         .letter.current { border-left: 2px solid var(--main); animation: blink 0.8s infinite; }
         @keyframes blink { 50% { border-color: transparent; } }
         input { position: absolute; opacity: 0; pointer-events: none; }
-
-        /* NEW: Results Overlay Style */
-        #results-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 26, 26, 0.95);
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 20px; z-index: 10;
-        }
-        .result-score { font-size: 3rem; color: var(--main); margin: 0; }
-        .result-sub { font-size: 1.2rem; color: var(--sub); margin-bottom: 20px; }
-
-        .restart-btn { background: var(--main); border: none; color: #000; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .restart-btn:hover { transform: scale(1.05); }
+        #results-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 26, 0.98); display: none; flex-direction: column; justify-content: center; align-items: center; border-radius: 20px; z-index: 10; }
+        .result-score { font-size: 4rem; color: var(--main); margin: 0; font-weight: 800; }
+        .result-sub { font-size: 1.2rem; color: var(--sub); margin-bottom: 25px; }
+        .restart-btn { background: var(--main); border: none; color: #000; padding: 12px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1rem; }
+        .restart-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
     </style>
 </head>
-<body onclick="focusInput()">
+<body onclick="focusInput(event)">
 
 <div class="container">
     <div id="results-overlay">
-        <h2 style="margin-bottom: 10px;">Test Complete!</h2>
-        <p class="result-score"><span id="final-wpm">0</span> WPM</p>
-        <p class="result-sub">Errors: <span id="final-errors">0</span></p>
+        <h2 style="margin-bottom: 5px;">Test Complete!</h2>
+        <p class="result-score"><span id="final-wpm">0</span></p>
+        <p style="color:var(--main); margin-top:-10px; margin-bottom: 10px; font-weight:bold;">WORDS PER MINUTE</p>
+        <p class="result-sub">Mistakes: <span id="final-errors" style="color:var(--error)">0</span></p>
         <button class="restart-btn" onclick="resetTest()">Try Again</button>
     </div>
 
@@ -53,7 +41,7 @@
             <div>WPM: <span id="wpm" class="stat">0</span></div>
             <div>Time: <span id="timer" class="stat">30</span>s</div>
         </div>
-        <select id="durationSelect" onchange="resetTest()">
+        <select id="durationSelect" onchange="resetTest()" onclick="event.stopPropagation()">
             <option value="15">15s</option>
             <option value="30" selected>30s</option>
             <option value="60">60s</option>
@@ -62,11 +50,11 @@
 
     <div id="words-container"></div>
     <input type="text" id="typing-input" autofocus autocomplete="off">
-    <button class="restart-btn" onclick="resetTest()">Restart</button>
+    <button class="restart-btn" onclick="resetTest()" style="background:#333; color:var(--text);">Restart</button>
 </div>
 
 <script>
-    const textPool = "technology is evolving faster than ever before learning to code opens up a world of possibilities creators build the future with logic and imagination typing speed is about rhythm and muscle memory focus on the screen and stay calm";
+    const textPool = "coding is a superpower that allows you to build anything you can imagine from simple websites to complex artificial intelligence systems the world is full of data waiting to be processed stay focused and keep your fingers moving across the home row of your keyboard";
     let wordsArray = [], currentWordIndex = 0, currentLetterIndex = 0, timer, maxTime, interval = null, isStarted = false, correctLetters = 0, totalErrors = 0;
 
     const container = document.getElementById('words-container'), input = document.getElementById('typing-input'), timerDisplay = document.getElementById('timer'), wpmDisplay = document.getElementById('wpm'), durationSelect = document.getElementById('durationSelect'), overlay = document.getElementById('results-overlay');
@@ -137,10 +125,15 @@
         isStarted = false; currentWordIndex = 0; currentLetterIndex = 0; correctLetters = 0; totalErrors = 0;
         input.value = ''; wpmDisplay.innerText = "0";
         initGame();
-        setTimeout(focusInput, 10);
+        setTimeout(() => input.focus(), 50);
     }
 
-    function focusInput() { if(overlay.style.display !== 'flex') input.focus(); }
+    // Fixed focus function to ignore dropdown clicks
+    function focusInput(e) { 
+        if(e && e.target.tagName === 'SELECT') return;
+        if(overlay.style.display !== 'flex') input.focus(); 
+    }
+    
     initGame();
 </script>
 </body>
