@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftType Pro</title>
+    <style>
+        :root { --bg: #1a1a1a; --main: #00d4ff; --text: #e0e0e0; --sub: #666; --error: #ff4b2b; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { max-width: 850px; width: 90%; text-align: center; background: #252525; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .header-ui { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px; }
+        .stats-box { display: flex; gap: 20px; font-weight: bold; font-size: 1.1rem; }
+        .stat { color: var(--main); }
+        select { background: #333; color: white; border: 1px solid var(--main); padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        #words-container { font-size: 1.4rem; line-height: 2.2rem; text-align: left; margin-bottom: 30px; min-height: 120px; user-select: none; }
+        .word { display: inline-block; margin-right: 12px; color: var(--sub); transition: 0.2s; }
+        .letter { position: relative; }
+        .letter.correct { color: #fff; }
+        .letter.incorrect { color: var(--error); border-bottom: 2px solid var(--error); }
+        .letter.current { border-left: 2px solid var(--main); animation: blink 0.8s infinite; }
+        @keyframes blink { 50% { border-color: transparent; } }
+        input { position: absolute; opacity: 0; pointer-events: none; }
+        .restart-btn { background: var(--main); border: none; color: #000; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .restart-btn:hover { transform: scale(1.05); filter: brightness(1.2); }
+    </style>
+</head>
+<body>
+
+<div class="container" onclick="focusInput()">
+    <div class="header-ui">
+        <div class="stats-box">
+            <div>WPM: <span id="wpm" class="stat">0</span></div>
+            <div>Errors: <span id="errors" class="stat" style="color: #ff4b2b;">0</span></div>
+            <div>Time: <span id="timer" class="stat">30</span>s</div>
+        </div>
+        <div>
+            <label style="font-size: 0.8rem; margin-right: 5px;">TEST DURATION:</label>
+            <select id="durationSelect" onchange="resetTest()">
+                <option value="15">15s</option>
+                <option value="30" selected>30s</option>
+                <option value="60">60s</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="words-container"></div>
+    <input type="text" id="typing-input" autofocus autocomplete="off">
+    
+    <button class="restart-btn" onclick="resetTest()">Restart Test</button>
+</div>
+
+<script>
+    const textPool = "technology is evolving faster than ever before learning to code opens up a world of possibilities for creators the atmosphere of the planet is a delicate balance of gases typing speed is a combination of muscle memory and focus challenge yourself to be better every single day stay curious and keep building";
+    let wordsArray = [];
+    let currentWordIndex = 0;
+    let currentLetterIndex = 0;
+    let timer;
+    let maxTime;
+    let interval = null;
+    let isStarted = false;
+    let correctLetters = 0;
+    let totalErrors = 0;
+
+    const container = document.getElementById('words-container');
+    const input = document.getElementById('typing-input');
+    const timerDisplay = document.getElementById('timer');
+    const wpmDisplay = document.getElementById('wpm');
+    const errorDisplay = document.getElementById('errors');
+    const durationSelect = document.getElementById('durationSelect');
+
+    function initGame() {
+        wordsArray = textPool.split(' ').sort(() => Math.random() - 0.5);
+        maxTime = parseInt(durationSelect.value);
+        timer = maxTime;
+        timerDisplay.innerText = timer;
+        renderWords();
+    }
+
+    function renderWords() {
+        container.innerHTML = wordsArray.map((word, wIdx) => `
+            <span class="word" id="word-${wIdx}">${word.split('').map((char, lIdx) => 
+                `<span class="letter" id="word-${wIdx}-ltr-${lIdx}">${char}</span>`
+            ).join('')}</span>
+        `).join('');
+        updateCursor();
+    }
+
+    function updateCursor() {
+        document.querySelectorAll('.letter').forEach(el => el.classList.remove('current'));
+        const current = document.getElementById(`word-${currentWordIndex}-ltr-${currentLetterIndex}`);
+        if (current) current.classList.add('current');
+    }
+
+    input.addEventListener('input', (e) => {
+        if (!isStarted) startTimer();
+        
+        const val = input.value;
+        const currentWord = wordsArray[currentWordIndex];
+        const targetChar = currentWord[currentLetterIndex];
+        const lastInputChar = val[val.length - 1];
+
+        // Handle word completion via space
+        if (val.endsWith(' ')) {
+            if (currentLetterIndex > 0) {
+                currentWordIndex++;
+                currentLetterIndex = 0;
+                input.value = '';
+            } else {
+                input.value = ''; // prevent space at start
+            }
+        } else {
+            const letterEl = document.getElementById(`word-${currentWordIndex}-ltr-${currentLetterIndex}`);
+            if (letterEl) {
+                if (lastInputChar === targetChar) {
+                    letterEl.classList.add('correct');
+                    correctLetters++;
+                } else {
+                    letterEl.classList.add('incorrect');
+                    totalErrors++;
+                    errorDisplay.innerText = totalErrors;
+                }
+                currentLetterIndex++;
+            }
+        }
+        updateCursor();
+    });
+
+    function startTimer() {
+        isStarted = true;
+        interval = setInterval(() => {
+            timer--;
+            timerDisplay.innerText = timer;
+            calculateWPM();
+            if (timer <= 0) endGame();
+        }, 1000);
+    }
+
+    function calculateWPM() {
+        const timeElapsed = (maxTime - timer) / 60;
+        const wpm = Math.round((correctLetters / 5) / timeElapsed) || 0;
+        wpmDisplay.innerText = wpm;
+    }
+
+    function endGame() {
+        clearInterval(interval);
+        input.disabled = true;
+        alert(`Finished! Speed: ${wpmDisplay.innerText} WPM | Errors: ${totalErrors}`);
+    }
+
+    function resetTest() {
+        clearInterval(interval);
+        isStarted = false;
+        currentWordIndex = 0;
+        currentLetterIndex = 0;
+        correctLetters = 0;
+        totalErrors = 0;
+        input.value = '';
+        input.disabled = false;
+        errorDisplay.innerText = "0";
+        wpmDisplay.innerText = "0";
+        initGame();
+        input.focus();
+    }
+
+    function focusInput() { input.focus(); }
+    initGame();
+</script>
+
+</body>
+</html>
